@@ -3,4 +3,6 @@ torch_geometric
 seaborn
 pandas
 rdkit
+tqdm
+numpy
 
