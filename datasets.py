@@ -15,7 +15,11 @@ data = pd.read_csv(DATA_PATH)
 print(data.head(10))
 
 class MoleculeDataset(Dataset):
-    def __init__(self, root, filename, transform=None, pre_transform=None):
+    def __init__(self, root, filename, test=False, transform=None, pre_transform=None):
+        
+    
+        self.test = test
+        self.filename = filename
         super(MoleculeDataset, self).__init__(root, transform, pre_transform)
     
     @property
@@ -120,6 +124,14 @@ class MoleculeDataset(Dataset):
             data = torch.load(os.path.join(self.processed_dir, f'data__{idx}.pt'))
 
         return data
+
+
+
+dataset = MoleculeDataset(root='data/', filename='HIV.csv')
+    
+print("Dataset Shape:", data.shape)
+print("Column Names:", data.columns.tolist())
+print("Basic Statistics:", data.describe())
 
         
     
