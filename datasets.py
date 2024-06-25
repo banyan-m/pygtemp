@@ -34,11 +34,11 @@ class MoleculeDataset(Dataset):
         for index, mol in tqdm(self.data.iterrows(), total=self.data.shape[0]):
             mol_obj= Chem.MolFromSmiles(mol["smiles"])
             
-            node_feats = self._get_node_feats(mol_obj)
+            node_feats = self._get_node_features(mol_obj)
 
-            edge_feats = self._get_edge_feats(mol_obj)
+            edge_feats = self._get_edge_features(mol_obj)
 
-            edge_index = self._get_edge_index(mol_obj)
+            edge_index = self._getadjacency_matrix(mol_obj)
 
             label = self._get_label(mol["HIV_active"])
 
@@ -90,8 +90,42 @@ class MoleculeDataset(Dataset):
         return torch.tensor(all_edge_feats, dtype=torch.float)
     
     def _getadjacency_matrix(self, mol):
-        adjacency_matrix = rdmolops.GetAdjacencyMatrix(mol)
-        return torch.tensor(adjacency_matrix, dtype=torch.float)
+
+        edge_index = []
+
+        for bond in mol.GetBonds():
+
+            i = bond.GetBeginAtomIdx()
+            j = bond.GetEndAtomIdx()
+            edge_index += [[i, j], [j, i]]
+
+        edge_index = torch.tensor(edge_index)
+        edge_index = edge_index.t().to(torch.long).view(2,-1)
+        return edge_index
+            
+    
+    def _get_label(self, label):
+        label = np.asarray([label])
+        return torch.tensor(label, dtype=torch.int64)
+    
+    def len(self):
+        return self.data.shape[0]
+    
+    
+    def get(self,idx):
+        if self.test:
+            data = torch.load(os.path.join(self.processed_dir, f'data_test_{idx}.pt'))
+
+        else:
+            data = torch.load(os.path.join(self.processed_dir, f'data__{idx}.pt'))
+
+        return data
+
+        
+    
+
+    
+
 
 
 
