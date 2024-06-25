@@ -28,7 +28,12 @@ class MoleculeDataset(Dataset):
     
     @property
     def processed_file_names(self):
-        return 'not_implemented.pt'
+        self.data = pd.read_csv(self.raw_paths[0]).reset_index()
+
+        if self.test:
+            return [f'data_test_{i}.pt' for i in range(self.data.shape[0])]
+        else:
+            return [f'data_{i}.pt' for i in range(self.data.shape[0])]
     
     def download(self):
         pass
