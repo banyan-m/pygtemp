@@ -51,6 +51,47 @@ class MoleculeDataset(Dataset):
             else:
                 torch.save(data,
                            os.path.join(self.processed_dir, f'data__{index}.pt'))
+                
+    def _get_node_features(self, mol):
+
+        all_node_feats = []
+        for atom in mol.GetAtoms():
+            node_feats = []
+            node_feats.append(atom.GetAtomicNum())
+            node_feats.append(atom.GetDegree())
+            node_feats.append(atom.GetFormalCharge())
+            node_feats.append(atom.GetHybridization())
+            node_feats.append(atom.GetIsAromatic())
+            node_feats.append(atom.GetTotalNumHs())
+            node_feats.append(atom.GetNumRadicalElectrons())
+            node_feats.append(atom.IsInRing())
+            node_feats.append(atom.GetChiralTag())
+            
+            all_node_feats.append(node_feats)
+        
+        all_node_feats = np.asarray(all_node_feats)
+        return torch.tensor(all_node_feats, dtype=torch.float)
+    
+    
+    def _get_edge_features(self, mol):
+        
+        all_edge_feats = []
+        
+        for bond in mol.GetBonds():
+            edge_feats = []
+            
+            edge_feats.append(bond.GetBondTypeAsDouble())
+            
+            edge_feats.append(bond.IsInRing())
+            
+            all_edge_feats += [edge_feats, edge_feats]
+        
+        all_edge_feats = np.asarray(all_edge_feats)
+        return torch.tensor(all_edge_feats, dtype=torch.float)
+    
+    def _getadjacency_matrix(self, mol):
+        adjacency_matrix = rdmolops.GetAdjacencyMatrix(mol)
+        return torch.tensor(adjacency_matrix, dtype=torch.float)
 
 
 
