@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch.nn import Linear, BatchNorm1d, ModuleList, ReLU
+from torch.nn import Linear, BatchNorm1d, ModuleList
 from torch_geometric.nn import TransformerConv, TopKPooling
 from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
 
@@ -18,4 +18,42 @@ class GNN(torch.nn.Module):
         dense_neurons = model_params["model_dense_neurons"]
         edge_dim = model_params["model_edge_dim"]
 
-        
+        self.conv_layers = ModuleList([])
+        self.transf_layers = ModuleList([])
+        self.pooling_layers = ModuleList([])
+        self.bn_layers = ModuleList([])
+
+        self.conv1 = TransformerConv(features_size, 
+                                     embedding_size, 
+                                     heads=n_heads,
+                                     dropout=dropout_rate,
+                                     edge_dim=edge_dim,
+                                     beta=True)
+        self.trasf1 = Linear(embedding_size* n_heads, embedding_size)
+        self.bn1 = BatchNorm1d(embedding_size)
+
+        for i in range(self.n_layers):
+            self.conv_layers.append(TransformerConv(embedding_size, 
+                                                     embedding_size, 
+                                                     heads=n_heads,
+                                                     dropout=dropout_rate,
+                                                     edge_dim=edge_dim,
+                                                     beta=True))
+            self.transf_layers.append(Linear(embedding_size* n_heads, embedding_size))
+            self.bn_layers.append(BatchNorm1d(embedding_size))
+            
+            #Please review below code to make sure the modulo is correct
+            if i % self.top_k_every_n == 0:
+                self.pooling_layers.append(TopKPooling(embedding_size, ratio=top_k_ratio))
+
+        self.linear1 = Linear(embedding_size*2, dense_neurons)
+        self.linear2 = Linear(dense_neurons, int(dense_neurons/2))
+        self.linear3 = Linear(int(dense_neurons/2), 1)
+
+    def forward(self, x, edge_attr, edge_index, batch_index):
+        x = self.conv1(x, edge_index, edge_attr)
+        x = torch.relu(self.trasf1(x))
+        x = self.bn1(x)
+
+       
+
