@@ -55,5 +55,29 @@ class GNN(torch.nn.Module):
         x = torch.relu(self.trasf1(x))
         x = self.bn1(x)
 
+        global_representation = []
+
+        for i in range(self.n_layers):
+            x = self.conv_layers[i](x, edge_index, edge_attr)
+            x = torch.relu(self.transf_layers[i](x))
+            x = self.bn_layers[i](x)
+
+            if i % self.top_k_every_n == 0 or i == self.n_layers:
+                x, edge_index, _, edge_attr, batch_index, _ , _ = self.pooling_layers[int(i/self.top_k_every_n)](
+                    x, edge_index, edge_attr, batch_index
+                    )
+                global_representation.append(torch.cat([gmp(x, batch_index), gap(x, batch_index)], dim=1))
+
+        x = sum(global_representation)
+
+        x = torch.relu(self.linear1(x))
+        x = F.dropout(x, p=0.8, training=self.training)
+        x = torch.relu(self.linear2(x))
+        x = F.dropout(x, p=0.8, training=self.training)
+        x = self.linear3(x)
+
+        return x
+
+
        
 
