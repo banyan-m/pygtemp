@@ -6,4 +6,7 @@ rdkit
 tqdm
 numpy
 mlflow
+pillow
+deepchem
+mlflow
 

@@ -29,7 +29,7 @@ class GNN(torch.nn.Module):
                                      dropout=dropout_rate,
                                      edge_dim=edge_dim,
                                      beta=True)
-        self.trasf1 = Linear(embedding_size* n_heads, embedding_size)
+        self.transf1 = Linear(embedding_size* n_heads, embedding_size)
         self.bn1 = BatchNorm1d(embedding_size)
 
         for i in range(self.n_layers):
@@ -52,7 +52,7 @@ class GNN(torch.nn.Module):
 
     def forward(self, x, edge_attr, edge_index, batch_index):
         x = self.conv1(x, edge_index, edge_attr)
-        x = torch.relu(self.trasf1(x))
+        x = torch.relu(self.transf1(x))
         x = self.bn1(x)
 
         global_representation = []
