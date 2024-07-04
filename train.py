@@ -79,4 +79,13 @@ def test(epoch,test_loader, loss_fn):
     log_conf_matrix(all_preds, all_labels, epoch)
     
     return running_loss / steps
+
+def log_conf_matrix(y_pred, y_true, epoch):
+    cm = confusion_matrix(y_true, y_pred)
+    classes = ["0", "1"]
+    df_cm = pd.DataFrame(cm, index = classes, columns = classes)
+    plt.figure(figsize = (10,7))
+    cfm_plot = sns.heatmap(df_cm, annot=True, cmap="Blues", fmt='g')
+    cfm_plot.figure.savefig(f"data/images/cm_{epoch}.png")
+    mlflow.log_artifact(f"data/images/cm_{epoch}.png")
     
