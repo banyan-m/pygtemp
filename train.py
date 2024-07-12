@@ -88,4 +88,28 @@ def log_conf_matrix(y_pred, y_true, epoch):
     cfm_plot = sns.heatmap(df_cm, annot=True, cmap="Blues", fmt='g')
     cfm_plot.figure.savefig(f"data/images/cm_{epoch}.png")
     mlflow.log_artifact(f"data/images/cm_{epoch}.png")
+
+def calculate_metrics(y_pred, y_true, epoch, type):
+    print(f"\n Confusion matric: \n {confusion_matrix(y_pred, y_true)}")
+    print(f"\n F1 score: {f1_score(y_true, y_pred)}")
+    print(f"\n Accuracy: {accuracy_score(y_true, y_pred)}")
+    prec = precision_score(y_true, y_pred)
+    rec = recall_score(y_true, y_pred)
+    print(f"\n Precision: {prec}")
+    print(f"\n Recall: {rec}")
+    mlflow.log_metric(key=f"Precision-{type}", value=float(prec), step=epoch)
+    mlflow.log_metric(key=f"Recall-{type}", value=float(rec), step=epoch)
+
+    try:
+        roc = roc_auc_score(y_true, y_pred)
+        print(f" ROC AUC: {roc}")
+        mlflow.log_metric(key=f"ROC-AUC-{type}", value=float(roc), step=epoch)
+
+    except:
+        mlflow.log_metric(key=f"ROC-AUC-{type}", value=float(0), step=epoch)
+        print("ROC AUC score could not be calculated")
+
+
+from mango import scheduler, Tuner
+from cinfig import HYPERPARAMETERS, BEST_HYPERPARAMETERS, SIGNATURE
     
