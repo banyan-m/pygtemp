@@ -111,5 +111,41 @@ def calculate_metrics(y_pred, y_true, epoch, type):
 
 
 from mango import scheduler, Tuner
-from cinfig import HYPERPARAMETERS, BEST_HYPERPARAMETERS, SIGNATURE
+from config import HYPERPARAMETERS, BEST_HYPERPARAMETERS, SIGNATURE
+
+
+def run_one_training(params):
+    params = params[0]
+
+    with mlflow.start_run() as run:
+
+        for key in params.keys():
+            mlflow.log_param(key, params[key])
+
+        
+        print("loading dataset")
+        train_dataset = MoleculeDataset(root="data/", filename="HIV_train_oversampled.csv")
+        train_dataset = MoleculeDataset(root="data/", filename="HIV_test.csv", test=True)
+
+        params["module_edge_dim"] = train_dataset[0].edge_attr.shape[1]
+
+        train_loader = DataLoader(train_dataset, batch_size=params["batch_size"], shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=params["batch_size"], shuffle=True)
+
+        print("loading model")
+        model_params = {k: v for k, v in params.items() if k.startswith("model_")}
+        model = GNN(feature_size=train_dataset[0].x.shape[1], model_params=model_params)
+        model = model.to(device)
+        print(f"Number of parameters: {count_parameters(model)}")
+        mlflow.log_param("num_params", count_parameters(model))
+
+        weight = torch.tensor([params["pos_weight"]], dtype=torch.float32).to(device)
+        loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=weight)
+        optimizer = torch.optim.SGD(model.parameters(), 
+                                    lr=params["learning_rate"], 
+                                    momentum=params["sgd_momentum"],
+                                    weight_decay=params["weight_decay"])
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=params["scheduler_gamma"])
+
+        
     
