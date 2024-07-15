@@ -147,5 +147,53 @@ def run_one_training(params):
                                     weight_decay=params["weight_decay"])
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=params["scheduler_gamma"])
 
-        
+        best_loss = 1000
+        early_stopping_counter = 0
+
+        for epoch in range(300):
+            if early_stopping_counter == 10:
+            
+                model.train()
+                loss = train_one_epoch(epoch, model, train_loader, optimizer, loss_fn)
+                print(f"Epoch {epoch} | Train Loss: {loss}")
+                mlflow.log_metric(key="Train loss", value= float(loss), step=epoch)
+                
+                model.eval()
+
+                if epoch % 5 == 0:
+                    loss = test(epoch, test_loader, loss_fn)
+                    print(f"Epoch {epoch} | Test Loss: {loss}")
+                    mlflow.log_metric(key="Test loss", value= float(loss), step=epoch)
+
+                    if float(loss) < best_loss:
+                        best_loss = float(loss)
+                        mlflow.pytorch.log_model(model, "model", signature=SIGNATURE)
+                        early_stopping_counter = 0
+
+                    else:
+                        early_stopping_counter += 1
+
+                scheduler.step()
+
+            else:
+                print("Early stopping due to imoprovement")
+                return [best_loss]
+    print(f"Finishing training with best loss: {best_loss}")
+    return [best_loss]
+
+print("Starting hyperparameter optimization")
+config = dict()
+config["optimizer"] = "Bayesian"
+config["num_iteration"] = 100
+
+tuner = Tuner(HYPERPARAMETERS, 
+              objective = run_one_training, 
+              conf_dict = config)
+
+results = tuner.minimize()
+    
+
+                
+
+
     
